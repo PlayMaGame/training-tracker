@@ -62,7 +62,7 @@
   .row-ign .ri-done { display: none; background: none; border: none; color: #4caf50; cursor: pointer; font-size: 12px; }
   .row-ign .ri-done.admin { display: inline; }
   .empty-state { color: #555; font-style: italic; text-align: center; padding: 40px 10px; font-size: 13px; }
-  .passed-section { height: 140px; flex-shrink: 0; border-radius: 8px; border: 1px solid #0f3460; padding: 8px 12px; overflow-y: auto; background: #16213e; }
+  .passed-section { height: 220px; flex-shrink: 0; border-radius: 8px; border: 1px solid #0f3460; padding: 8px 12px; overflow-y: auto; background: #16213e; }
   .passed-section .ps-h { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: flex; justify-content: space-between; }
   .passed-section .ps-h span { color: #e94560; }
   .ps-list { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -140,7 +140,7 @@
       </div>
     </div>
     <div class="passed-section">
-      <div class="ps-h">Завершили <span id="passedCount">0</span></div>
+      <div class="ps-h"><span id="passedTitle"></span> <span id="passedCount">0</span></div>
       <div class="ps-list" id="passedList"></div>
       <div id="emptyPassed" class="ps-empty" style="display:none;">—</div>
     </div>
@@ -173,7 +173,7 @@ const ADMIN_PASSWORD = "runni123";
 const LANG = {
   en: {
     add:"+", placeholder:"Enter IGN...", waiting:"Queue", passed:"Completed", training:"Training",
-    gotIt:"Got it", ign:"IGN", players:"players", points:"p.", exists:"Player already exists!",
+    gotIt:"Got it", ign:"IGN", players:"players", points:"p.", exists:"Player already exists!", passedSection:"Completed / Reviews",
     noActive:"No active players", approve:"→", done:"✓", back:"↩",
     emptyTrain:"No active players.", emptyPassed:"—",
     reviewPlaceholder:"Write a review...", reviewSave:"Save", reviewCancel:"Cancel", reviewSubTrained:"trained",
@@ -197,7 +197,7 @@ const LANG = {
   },
   ru: {
     add:"+", placeholder:"Введите ник...", waiting:"Ожидают", passed:"Завершили", training:"Тренировка",
-    gotIt:"Понял", ign:"Ник в игре", players:"игроков", points:"оч.", exists:"Игрок уже существует!",
+    gotIt:"Понял", ign:"Ник в игре", players:"игроков", points:"оч.", exists:"Игрок уже существует!", passedSection:"Завершили / Отзывы",
     noActive:"Нет активных игроков", approve:"→", done:"✓", back:"↩",
     emptyTrain:"Перенесите игроков из очереди.", emptyPassed:"—",
     reviewPlaceholder:"Напишите отзыв...", reviewSave:"Сохранить", reviewCancel:"Отмена", reviewSubTrained:"прошёл тренировку",
@@ -487,6 +487,7 @@ function render() {
     table.innerHTML = html;
   }
 
+  document.getElementById("passedTitle").textContent = t("passedSection");
   document.getElementById("passedCount").textContent = passed.length;
   const passedList = document.getElementById("passedList");
   const emptyPassed = document.getElementById("emptyPassed");
