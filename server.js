@@ -58,4 +58,5 @@ app.post("/api/state", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Data directory: ${DATA_DIR}`);
 });
