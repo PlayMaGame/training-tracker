@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Training Tracker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #eee; height: 100vh; overflow: hidden; }
+  .app { display: flex; height: 100vh; }
+  .left { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; background: #16213e; border-right: 2px solid #0f3460; overflow: hidden; }
+  .left-pad { padding: 14px 14px 0; }
+  .lh { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .lh h1 { font-size: 18px; color: #e94560; cursor: default; user-select: none; }
+  .lh .admin-badge { display: none; font-size: 10px; background: #e94560; color: #fff; padding: 2px 8px; border-radius: 10px; }
+  .lh .admin-badge.on { display: inline; }
+  .lh .lock-btn { display: none; font-size: 11px; background: #0f3460; color: #999; border: none; border-radius: 4px; padding: 3px 10px; cursor: pointer; margin-left: auto; }
+  .lh .lock-btn.on { display: inline; }
+  .lh .lock-btn:hover { color: #e94560; }
+  .reg-row { display: flex; gap: 6px; }
+  .reg-row input { flex: 1; padding: 9px 12px; border: none; border-radius: 6px; background: #1a1a2e; color: #eee; font-size: 14px; outline: none; }
+  .reg-row input:focus { outline: 2px solid #e94560; }
+  .reg-row button { padding: 9px 16px; border: none; border-radius: 6px; background: #e94560; color: #fff; font-weight: 700; font-size: 14px; cursor: pointer; }
+  .queue-title { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; padding: 10px 14px 4px; display: flex; justify-content: space-between; }
+  .queue-title span { color: #e94560; }
+  .queue-list { flex: 1; overflow-y: auto; padding: 0 14px 10px; display: flex; flex-direction: column; gap: 3px; }
+  .q-item { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 6px; background: #1a1a2e; font-size: 13px; }
+  .q-item .qi-name { font-weight: 600; flex: 1; }
+  .q-item .qi-del { display: none; background: none; border: none; color: #533; cursor: pointer; font-size: 14px; padding: 0 2px; }
+  .q-item .qi-del:hover { color: #e94560; }
+  .q-item.admin .qi-del { display: inline; }
+  .q-item .qi-btn { display: none; background: #0f3460; color: #e94560; border: none; border-radius: 5px; padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .q-item .qi-btn:hover { background: #1a4a80; }
+  .q-item.admin .qi-btn { display: inline; }
+  .q-empty { color: #444; font-size: 12px; font-style: italic; padding: 10px 14px; }
+  .stats-line { font-size: 11px; color: #444; text-align: center; padding: 8px 14px; border-top: 1px solid #0f3460; }
+  .right { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 14px 18px 14px 14px; gap: 10px; min-width: 0; }
+  .train-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .train-section .ts-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .train-section .ts-h h2 { font-size: 15px; color: #ccc; }
+  .train-section .ts-h .ts-info { font-size: 12px; color: #999; }
+  .train-section .ts-h .ts-info b { color: #e94560; }
+  .table-wrap { flex: 1; overflow: auto; border-radius: 8px; border: 1px solid #0f3460; }
+  table { border-collapse: collapse; font-size: 12px; width: 100%; }
+  th, td { border: 1px solid #0f3460; padding: 5px 5px; text-align: center; white-space: nowrap; }
+  th { background: #0f3460; color: #e94560; font-weight: 600; position: sticky; top: 0; z-index: 2; cursor: pointer; user-select: none; }
+  th:hover { background: #1a4a80; }
+  th:first-child { text-align: left; cursor: default; position: sticky; left: 0; z-index: 4; }
+  th:first-child:hover { background: #0f3460; }
+  td:first-child { text-align: left; background: #16213e; position: sticky; left: 0; z-index: 1; font-size: 12px; min-width: 80px; }
+  .cell-cb { width: 18px; height: 18px; border: 2px solid #555; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; cursor: default; transition: 0.15s; vertical-align: middle; }
+  .cell-cb.checked { border-color: #e94560; background: #e94560; color: #fff; }
+  .cell-cb.admin { cursor: pointer; }
+  .row-ign { display: flex; align-items: center; gap: 5px; }
+  .row-ign .ri-name { font-weight: 600; }
+  .row-ign .ri-del { display: none; background: none; border: none; color: #533; cursor: pointer; font-size: 13px; padding: 0; }
+  .row-ign .ri-del:hover { color: #e94560; }
+  .row-ign .ri-del.admin { display: inline; }
+  .row-ign .ri-bar { width: 40px; height: 4px; background: #0f3460; border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+  .row-ign .ri-bar .ri-fill { height: 100%; background: #e94560; border-radius: 2px; transition: width 0.2s; }
+  .row-ign .ri-pct { font-size: 10px; color: #888; min-width: 28px; }
+  .row-ign .ri-done { display: none; background: none; border: none; color: #4caf50; cursor: pointer; font-size: 12px; }
+  .row-ign .ri-done.admin { display: inline; }
+  .empty-state { color: #555; font-style: italic; text-align: center; padding: 40px 10px; font-size: 13px; }
+  .passed-section { height: 140px; flex-shrink: 0; border-radius: 8px; border: 1px solid #0f3460; padding: 8px 12px; overflow-y: auto; background: #16213e; }
+  .passed-section .ps-h { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .passed-section .ps-h span { color: #e94560; }
+  .ps-list { display: flex; flex-wrap: wrap; gap: 4px; }
+  .ps-item { display: inline-flex; align-items: center; gap: 4px; background: #1a1a2e; padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+  .ps-item .ps-name { font-weight: 600; color: #888; cursor: default; }
+  .ps-item.admin .ps-name { cursor: pointer; }
+  .ps-item.admin .ps-name:hover { color: #e94560; }
+  .ps-item .ps-del { display: none; background: none; border: none; color: #533; cursor: pointer; font-size: 11px; padding: 0 2px; }
+  .ps-item .ps-del:hover { color: #e94560; }
+  .ps-item.admin .ps-del { display: inline; }
+  .ps-item .ps-back { display: none; background: none; border: none; color: #666; cursor: pointer; font-size: 11px; padding: 0 2px; }
+  .ps-item.admin .ps-back { display: inline; }
+  .ps-item .ps-back:hover { color: #e94560; }
+  .ps-empty { color: #444; font-size: 12px; font-style: italic; }
+  .ps-list-student { display: flex; flex-direction: column; gap: 6px; }
+  .psi-student { background: #1a1a2e; border-radius: 8px; padding: 8px 10px; }
+  .psi-student .psi-head { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .psi-student .psi-head .psi-name { font-weight: 600; color: #888; }
+  .psi-student .psi-head .psi-score { color: #555; font-size: 10px; }
+  .psi-student .psi-text { color: #aaa; font-size: 12px; margin-top: 3px; padding-left: 2px; line-height: 1.4; word-break: break-word; }
+  .psi-student .psi-text:empty { display: none; }
+  .psi-student .psi-text::before { content: "— "; color: #555; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #0f3460; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: #e94560; border-radius: 3px; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #16213e; border-radius: 14px; padding: 28px; max-width: 460px; width: 92%; max-height: 65vh; overflow-y: auto; border: 1px solid #0f3460; }
+  .modal h2 { color: #e94560; margin-bottom: 10px; font-size: 18px; }
+  .modal p { color: #ccc; font-size: 14px; line-height: 1.7; }
+  .modal-close { margin-top: 16px; background: #e94560; color: #fff; padding: 8px 22px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; }
+  .review-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 101; align-items: center; justify-content: center; }
+  .review-overlay.open { display: flex; }
+  .review-box { background: #16213e; border-radius: 14px; padding: 28px; max-width: 460px; width: 92%; border: 1px solid #0f3460; }
+  .review-box h2 { color: #e94560; margin-bottom: 4px; font-size: 18px; }
+  .review-box .rb-sub { color: #888; font-size: 12px; margin-bottom: 12px; }
+  .review-box textarea { width: 100%; min-height: 120px; padding: 10px; border: none; border-radius: 8px; background: #1a1a2e; color: #eee; font-size: 14px; font-family: inherit; outline: none; resize: vertical; }
+  .review-box textarea:focus { outline: 2px solid #e94560; }
+  .review-box .rb-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .review-box .rb-actions button { padding: 8px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; }
+  .rb-save { background: #e94560; color: #fff; }
+  .rb-save:hover { background: #d63850; }
+  .rb-cancel { background: #0f3460; color: #999; }
+  .rb-cancel:hover { color: #eee; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="left">
+    <div class="left-pad">
+      <div class="lh">
+        <h1 id="mainTitle">Очередь</h1>
+        <span class="admin-badge" id="adminBadge">Admin</span>
+        <button class="lock-btn" id="lockBtn" onclick="exitAdmin()">Закрыть</button>
+      </div>
+      <div class="reg-row">
+        <input type="text" id="ignInput" placeholder="Введите ник...">
+        <button onclick="addPlayer()">+</button>
+      </div>
+    </div>
+    <div class="queue-title">Ожидают <span id="queueCount">0</span></div>
+    <div class="queue-list" id="queueList"></div>
+    <div class="stats-line" id="statsLine"></div>
+  </div>
+  <div class="right">
+    <div class="train-section">
+      <div class="ts-h">
+        <h2>Тренировка</h2>
+        <div class="ts-info" id="trainInfo">Нет активных игроков</div>
+      </div>
+      <div class="table-wrap">
+        <table id="trainingTable"></table>
+        <div id="emptyTrain" class="empty-state">Перенесите игроков из очереди</div>
+      </div>
+    </div>
+    <div class="passed-section">
+      <div class="ps-h">Завершили <span id="passedCount">0</span></div>
+      <div class="ps-list" id="passedList"></div>
+      <div id="emptyPassed" class="ps-empty" style="display:none;">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modalTitle"></h2>
+    <p id="modalDesc"></p>
+    <button class="modal-close" onclick="closeModal()" id="btnGotIt">Понял</button>
+  </div>
+</div>
+
+<div class="review-overlay" id="reviewModal">
+  <div class="review-box">
+    <h2 id="reviewTitle"></h2>
+    <div class="rb-sub" id="reviewSub"></div>
+    <textarea id="reviewText" placeholder="Напишите отзыв..."></textarea>
+    <div class="rb-actions">
+      <button class="rb-save" onclick="saveReview()">Сохранить</button>
+      <button class="rb-cancel" onclick="closeReview()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = "runni123";
+
+const LANG = {
+  en: {
+    add:"+", placeholder:"Enter IGN...", waiting:"Queue", passed:"Completed", training:"Training",
+    gotIt:"Got it", players:"players", points:"p.", exists:"Player already exists!",
+    noActive:"No active players", approve:"→", done:"✓", back:"↩",
+    emptyTrain:"No active players.", emptyPassed:"—",
+    reviewPlaceholder:"Write a review...", reviewSave:"Save", reviewCancel:"Cancel", reviewSubTrained:"trained",
+    skillTitle: {
+      "Keybinds":"Keybinds","Attack Markers":"Atk Markers","Blocking":"Block","Charged vs Fast":"Chrg/Fast","Feints":"Feints","Kicks":"Kicks","Parrying":"Parry","Window Pressure":"Window","Stamina Mgmt":"Stamina","Spear Throws":"Spear","Anim Shortening":"Anim Short","1v1 Meta (GS)":"1v1 GS"
+    },
+    desc: {
+      "Keybinds":"Set separate keybinds for each attack direction (left, right, upper) and for block. Customize failed block color. Move HP and stamina display under your feet.",
+      "Attack Markers":"Colored stripes when attacked show the attack direction. Charged attack deals 2.5–4x damage of a fast attack and interrupts the enemy's swing.",
+      "Blocking":"Block in the attack direction. Side block at 90° covers two sides. Shield breaks for 30s. Weapon has 600 block HP (restored by hitting anything). Take initiative after blocking.",
+      "Charged vs Fast":"Charged attacks deal 2.5–4x damage and interrupt enemies. Charge time: greatsword ~1s, axes/hammers ~2s. Attack charges before the yellow indicator — learn timings.",
+      "Feints":"Cancel an attack with a feint — faster than block-cancelling. Max 5 feints (+50ms each). Combos: Left/Right → Upper, or Left → Right with 90° body turn to shorten animation.",
+      "Kicks":"Basic: hold attack ~0.5s + kick (beginners). Advanced: feint → kick. Guaranteed: parry → kick. Kick after enemy's kick. Never hold block without an attack indicator.",
+      "Parrying":"Attack the same direction as the enemy's incoming hit. Parries are the fastest attacks. Side parry at 90° covers 2 directions. Parry + feint to confuse.",
+      "Window Pressure":"Core 1v1 tactic: walk sideways charging an attack, cancel with block every 1–2s. Keep a charged attack ~80% of the time. Bait the enemy to attack first, interrupt them.",
+      "Stamina Mgmt":"Heavy breathing = low stamina. Greatsword uses the least stamina. Move speed: 100% forward, 90% backward. Armor doesn't affect speed. Take initiative after blocking.",
+      "Spear Throws":"Throw a spear. 90–130 damage (more at close range). Finish low-HP enemies. Aim head vs shields; aim legs if head is covered. 2s recovery after throw.",
+      "Anim Shortening":"Left attack from the left side of the enemy = faster. Right attack from the right side. Pass behind for instant hits. Body positioning reduces animation time.",
+      "1v1 Meta (GS)":"Greatsword is best for 1v1: fastest animations, lowest stamina, quickest recovery. Look at the ground in duels (better FPS). Watch for Battle Rage — uninterruptible below 60% HP."
+    }
+  },
+  ru: {
+    add:"+", placeholder:"Введите ник...", waiting:"Ожидают", passed:"Завершили", training:"Тренировка",
+    gotIt:"Понял", players:"игроков", points:"оч.", exists:"Игрок уже существует!",
+    noActive:"Нет активных игроков", approve:"→", done:"✓", back:"↩",
+    emptyTrain:"Перенесите игроков из очереди.", emptyPassed:"—",
+    reviewPlaceholder:"Напишите отзыв...", reviewSave:"Сохранить", reviewCancel:"Отмена", reviewSubTrained:"прошёл тренировку",
+    skillTitle: {
+      "Keybinds":"Кейбинды","Attack Markers":"Маркеры","Blocking":"Блок","Charged vs Fast":"Зар/Быстр","Feints":"Финты","Kicks":"Пинки","Parrying":"Парир","Window Pressure":"Окна","Stamina Mgmt":"Стамина","Spear Throws":"Копья","Anim Shortening":"Сокр Аним","1v1 Meta (GS)":"1х1 Мета"
+    },
+    desc: {
+      "Keybinds":"Настройте отдельные кейбинды на атаки и блок. Поменяйте цвета неуспешного блока. Вынесите ХП и выносливость под ноги для удобства.",
+      "Attack Markers":"Цветные полоски при атаке показывают направление удара. Заряженная атака наносит в 2.5–4 раза больше урона, чем быстрая, и сбивает атаку противника.",
+      "Blocking":"Блокируйте в сторону атаки. Боковой блок под 90° закрывает 2 направления сразу. Щит ломается на 30с. У оружия 600 ед. блока (восстанавливается любым ударом). После попадания в ваш блок — берите инициативу.",
+      "Charged vs Fast":"Заряженная атака наносит в 2.5–4 раза больше и сбивает атаку врага. Время заряда: двуручный меч ~1с, топоры/молоты ~2с. Атака считается заряженной до желтого индикатора — привыкайте к таймингам.",
+      "Feints":"Финт — отмена атаки (быстрее чем блоком). Макс 5 финтов (+50мс каждый). Лучшие комбинации: Л/П → Верх или Л → П с доворотом корпуса на 90° для сокращения анимации.",
+      "Kicks":"Простой: зажать атаку ~0.5с + пинок (новички). Продвинутый: финт → пинок. Гарантированный: парирование → пинок. Пинок после пинка врага. Никогда не держите блок без индикатора атаки.",
+      "Parrying":"Атакуйте в ту же сторону, откуда летит удар противника. Парирование — самая быстрая атака в игре. Боковое парирование закрывает 2 стороны. Парирование + финт для запутывания.",
+      "Window Pressure":"Основная тактика 1х1 — ходите боком заряжая атаку, отменяйте блоком каждые 1–2с. Держите заряженную атаку ~80% времени. Вынудите врага атаковать первым и собейте его удар.",
+      "Stamina Mgmt":"Тяжелое дыхание = кончается стамина. Двуручный меч тратит меньше всего стамины. Скорость: 100% вперед, 90% назад. Броня не влияет на скорость. После попадания в ваш блок — атакуйте.",
+      "Spear Throws":"Бросок копья. 90–130 урона (чем ближе, тем больше). Добивайте врагов с низким ХП. Цельтесь в голову (если есть щит — в ноги). 2с откат после броска.",
+      "Anim Shortening":"Бейте левой атакой стоя слева от врага, правой — справа. Заходите за спину для мгновенных ударов. Позиционирование корпуса сокращает анимацию — тренируйте довороты.",
+      "1v1 Meta (GS)":"Двуручный меч — лучший для 1х1: самая быстрая анимация, мало стамины, быстрый откат. В дуэли смотрите в землю (больше ФПС). Помните про Ярость боя — несбиваемые атаки 15с при ХП ниже 60%."
+    }
+  }
+};
+
+const SKILLS = [
+  "Keybinds","Attack Markers","Blocking","Charged vs Fast","Feints","Kicks",
+  "Parrying","Window Pressure","Stamina Mgmt","Spear Throws","Anim Shortening","1v1 Meta (GS)"
+];
+
+let lang = "ru";
+let state = { players: [], admin: false };
+
+function t(k) { return LANG[lang][k]; }
+function st(k) { return LANG[lang].skillTitle[k]; }
+function sd(k) { return LANG[lang].desc[k]; }
+
+// ---- Server sync ----
+
+let serverUrl = window.location.origin;
+let syncTimer = null;
+let isSaving = false;
+
+async function fetchState() {
+  try {
+    const r = await fetch(serverUrl + "/api/state");
+    if (r.ok) {
+      const data = await r.json();
+      if (data && data.players) {
+        const wasAdmin = state.admin;
+        state = data;
+        state.admin = wasAdmin;
+        render();
+      }
+    }
+  } catch (e) {
+    // Server unavailable — silently fall back to localStorage
+  }
+}
+
+async function pushState() {
+  if (isSaving) return;
+  isSaving = true;
+  try {
+    await fetch(serverUrl + "/api/state?token=" + ADMIN_PASSWORD, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ players: state.players })
+    });
+  } catch (e) {
+    /* offline - ignore */
+  }
+  isSaving = false;
+}
+
+function startSync() {
+  fetchState(); // initial load
+  syncTimer = setInterval(fetchState, 2000); // poll every 2s
+}
+
+function save() {
+  // localStorage fallback
+  localStorage.setItem("training_tracker_state", JSON.stringify({ players: state.players }));
+  pushState();
+}
+
+// Try to load from server, fall back to localStorage
+async function initLoad() {
+  try {
+    const r = await fetch(serverUrl + "/api/state");
+    if (r.ok) {
+      const data = await r.json();
+      if (data && data.players) {
+        state.players = data.players;
+        return;
+      }
+    }
+  } catch (e) { /* fallback */ }
+
+  // Fallback: localStorage
+  const saved = localStorage.getItem("training_tracker_state");
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      if (data.players) state.players = data.players;
+    } catch {}
+  }
+}
+
+// ---- App logic ----
+
+function addPlayer() {
+  const input = document.getElementById("ignInput");
+  const ign = input.value.trim();
+  if (!ign) return;
+  if (state.players.find(p => p.ign.toLowerCase() === ign.toLowerCase())) { alert(t("exists")); return; }
+  state.players.push({ ign, skills: {}, status: "queue", review: "" });
+  input.value = "";
+  save();
+  render();
+}
+
+function removePlayer(ign) {
+  if (!state.admin) return;
+  if (!confirm(lang === "ru" ? `Удалить ${ign}?` : `Delete ${ign}?`)) return;
+  state.players = state.players.filter(p => p.ign !== ign);
+  save();
+  render();
+}
+
+function approvePlayer(ign) {
+  if (!state.admin) return;
+  const p = state.players.find(x => x.ign === ign);
+  if (!p) return;
+  p.status = "approved";
+  save();
+  render();
+}
+
+function markDone(ign) {
+  if (!state.admin) return;
+  const p = state.players.find(x => x.ign === ign);
+  if (!p) return;
+  p.status = "passed";
+  save();
+  render();
+}
+
+function moveBack(ign) {
+  if (!state.admin) return;
+  const p = state.players.find(x => x.ign === ign);
+  if (!p) return;
+  p.status = "approved";
+  save();
+  render();
+}
+
+function toggleSkill(ign, skill) {
+  if (!state.admin) return;
+  const p = state.players.find(x => x.ign === ign);
+  if (!p) return;
+  if (p.skills[skill]) delete p.skills[skill];
+  else p.skills[skill] = true;
+  save();
+  render();
+}
+
+let reviewIgn = null;
+function openReview(ign) {
+  if (!state.admin) return;
+  reviewIgn = ign;
+  const p = state.players.find(x => x.ign === ign);
+  if (!p) { closeReview(); return; }
+  document.getElementById("reviewTitle").textContent = ign;
+  const pts = SKILLS.filter(s => p.skills[s]).length;
+  document.getElementById("reviewSub").textContent = `${pts}/${SKILLS.length} ${t("reviewSubTrained")}`;
+  document.getElementById("reviewText").value = p.review || "";
+  document.getElementById("reviewModal").classList.add("open");
+}
+
+function saveReview() {
+  if (!reviewIgn || !state.admin) return;
+  const p = state.players.find(x => x.ign === reviewIgn);
+  if (!p) return;
+  p.review = document.getElementById("reviewText").value.trim();
+  save();
+  closeReview();
+}
+
+function closeReview() {
+  reviewIgn = null;
+  document.getElementById("reviewModal").classList.remove("open");
+}
+document.getElementById("reviewModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeReview(); });
+
+let clickCount = 0, clickTimer = null;
+document.getElementById("mainTitle").addEventListener("click", () => {
+  clickCount++;
+  if (clickTimer) clearTimeout(clickTimer);
+  clickTimer = setTimeout(() => { clickCount = 0; }, 600);
+  if (clickCount === 3) {
+    clickCount = 0;
+    const pwd = prompt("Admin password:");
+    if (pwd === ADMIN_PASSWORD) {
+      state.admin = true;
+      sessionStorage.setItem("training_admin", "1");
+      render();
+    }
+  }
+});
+
+function exitAdmin() {
+  state.admin = false;
+  sessionStorage.removeItem("training_admin");
+  render();
+}
+
+function openModal(skill) {
+  document.getElementById("modalTitle").textContent = st(skill);
+  document.getElementById("modalDesc").textContent = sd(skill) || (lang === "ru" ? "Нет описания." : "No description.");
+  document.getElementById("modal").classList.add("open");
+}
+function closeModal() { document.getElementById("modal").classList.remove("open"); }
+document.getElementById("modal").addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+function render() {
+  const maxPts = SKILLS.length;
+  const queue = state.players.filter(p => p.status === "queue");
+  const approved = state.players.filter(p => p.status === "approved");
+  const passed = state.players.filter(p => p.status === "passed");
+  const total = state.players.length;
+
+  document.getElementById("adminBadge").classList.toggle("on", state.admin);
+  document.getElementById("lockBtn").classList.toggle("on", state.admin);
+
+  document.getElementById("queueCount").textContent = queue.length;
+  const queueList = document.getElementById("queueList");
+  if (queue.length === 0) {
+    queueList.innerHTML = '<div class="q-empty">—</div>';
+  } else {
+    let html = "";
+    for (const p of queue) {
+      html += `<div class="q-item${state.admin ? ' admin' : ''}">
+        <span class="qi-name">${p.ign}</span>
+        ${state.admin ? `<button class="qi-del" onclick="removePlayer('${p.ign}')">✕</button>` : ""}
+        ${state.admin ? `<button class="qi-btn" onclick="approvePlayer('${p.ign}')">${t("approve")}</button>` : ""}
+     </div>`;
+    }
+    queueList.innerHTML = html;
+  }
+  document.getElementById("statsLine").textContent = `${total} ${t("players")} · ${queue.length} ${t("waiting").toLowerCase()} · ${passed.length} ${t("passed").toLowerCase()}`;
+
+  const table = document.getElementById("trainingTable");
+  const emptyTrain = document.getElementById("emptyTrain");
+
+  if (approved.length === 0) {
+    table.innerHTML = "";
+    emptyTrain.style.display = "block";
+    document.getElementById("trainInfo").textContent = t("noActive");
+  } else {
+    emptyTrain.style.display = "none";
+    const allChecks = approved.reduce((sum, p) => sum + SKILLS.filter(s => p.skills[s]).length, 0);
+    document.getElementById("trainInfo").innerHTML = `<b>${approved.length}</b> ${t("players")} · ${allChecks}/${approved.length * maxPts} ${t("points")}`;
+
+    let html = "<thead><tr><th>IGN</th>";
+    for (const skill of SKILLS) html += `<th onclick="openModal('${skill}')">${st(skill)}</th>`;
+    html += "</tr></thead><tbody>";
+
+    for (const p of approved) {
+      const pts = SKILLS.filter(s => p.skills[s]).length;
+      const pct = Math.round(pts / maxPts * 100);
+      const allDone = pts === maxPts;
+      html += `<tr><td><div class="row-ign">
+        ${state.admin ? `<button class="ri-del admin" onclick="removePlayer('${p.ign}')">✕</button>` : ""}
+        <span class="ri-name">${p.ign}</span>
+        <div class="ri-bar"><div class="ri-fill" style="width:${pct}%"></div></div>
+        <span class="ri-pct">${pct}%</span>
+        ${state.admin && allDone ? `<button class="ri-done admin" onclick="markDone('${p.ign}')">${t("done")}</button>` : ""}
+      </div></td>`;
+      for (const skill of SKILLS) {
+        const checked = p.skills[skill] || false;
+        const clickable = state.admin ? ` onclick="toggleSkill('${p.ign}', '${skill}')"` : "";
+        html += `<td><span class="cell-cb${checked ? ' checked' : ''}${state.admin ? ' admin' : ''}"${clickable}>${checked ? '✓' : ''}</span></td>`;
+      }
+      html += "</tr>";
+    }
+    html += "</tbody>";
+    table.innerHTML = html;
+  }
+
+  document.getElementById("passedCount").textContent = passed.length;
+  const passedList = document.getElementById("passedList");
+  const emptyPassed = document.getElementById("emptyPassed");
+  if (passed.length === 0) {
+    passedList.innerHTML = "";
+    emptyPassed.style.display = "block";
+  } else {
+    emptyPassed.style.display = "none";
+    if (state.admin) {
+      let html = "";
+      for (const p of passed) {
+        const pts = SKILLS.filter(s => p.skills[s]).length;
+        const hasReview = p.review ? "📝" : "";
+        html += `<div class="ps-item admin">
+          <span class="ps-name" onclick="openReview('${p.ign}')">${p.ign} ${hasReview}</span>
+          <span style="font-size:10px;color:#555;">${pts}/${maxPts}</span>
+          <button class="ps-back" onclick="moveBack('${p.ign}')">${t("back")}</button>
+          <button class="ps-del" onclick="removePlayer('${p.ign}')">✕</button>
+        </div>`;
+      }
+      passedList.innerHTML = html;
+    } else {
+      let html = '<div class="ps-list-student">';
+      for (const p of passed) {
+        const pts = SKILLS.filter(s => p.skills[s]).length;
+        html += `<div class="psi-student">
+          <div class="psi-head">
+            <span class="psi-name">${p.ign}</span>
+            <span class="psi-score">${pts}/${maxPts}</span>
+          </div>
+          <div class="psi-text">${p.review || ""}</div>
+        </div>`;
+      }
+      html += "</div>";
+      passedList.innerHTML = html;
+    }
+  }
+}
+
+// Start
+(async function() {
+  await initLoad();
+  startSync();
+  render();
+})();
+</script>
+</body>
+</html>
