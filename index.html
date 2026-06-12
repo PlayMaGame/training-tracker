@@ -45,7 +45,7 @@
   th, td { border: 1px solid #0f3460; padding: 5px 5px; text-align: center; white-space: nowrap; }
   th { background: #0f3460; color: #e94560; font-weight: 600; position: sticky; top: 0; z-index: 2; cursor: pointer; user-select: none; }
   th:hover { background: #1a4a80; }
-  th:first-child { text-align: left; cursor: default; position: sticky; left: 0; z-index: 4; }
+  th:first-child { text-align: left; cursor: pointer; position: sticky; left: 0; z-index: 4; }
   th:first-child:hover { background: #0f3460; }
   td:first-child { text-align: left; background: #16213e; position: sticky; left: 0; z-index: 1; font-size: 12px; }
   .th-skill { white-space: normal; word-break: break-word; line-height: 1.3; cursor: pointer; }
@@ -235,6 +235,8 @@ const SKILLS = [
 
 let lang = "ru";
 let state = { players: [], admin: false };
+let sortBy = null; // "ign" | "progress" | null
+let sortDir = "asc"; // "asc" | "desc"
 
 function t(k) { return LANG[lang][k]; }
 function st(k) { return LANG[lang].skillTitle[k]; }
@@ -440,6 +442,16 @@ function toggleLang() {
   render();
 }
 
+function toggleSort(field) {
+  if (sortBy === field) {
+    sortDir = sortDir === "asc" ? "desc" : "asc";
+  } else {
+    sortBy = field;
+    sortDir = field === "ign" ? "asc" : "desc";
+  }
+  render();
+}
+
 function render() {
   const maxPts = SKILLS.length;
   const queue = state.players.filter(p => p.status === "queue");
@@ -480,11 +492,22 @@ function render() {
     const allChecks = approved.reduce((sum, p) => sum + SKILLS.filter(s => p.skills[s]).length, 0);
     document.getElementById("trainInfo").innerHTML = `<b>${approved.length}</b> ${t("players")} · ${allChecks}/${approved.length * maxPts} ${t("points")}`;
 
-    let html = "<thead><tr><th>" + t("ign") + "</th>";
+    let list = approved.slice();
+    if (sortBy === "ign") {
+      list.sort((a, b) => sortDir === "asc" ? a.ign.localeCompare(b.ign) : b.ign.localeCompare(a.ign));
+    } else if (sortBy === "progress") {
+      list.sort((a, b) => {
+        const pa = SKILLS.filter(s => a.skills[s]).length;
+        const pb = SKILLS.filter(s => b.skills[s]).length;
+        return sortDir === "asc" ? pa - pb : pb - pa;
+      });
+    }
+    const arrow = sortDir === "asc" ? " ▲" : " ▼";
+    let html = "<thead><tr><th onclick=\"toggleSort('ign')\">" + t("ign") + (sortBy === "ign" ? arrow : "") + "</th>";
     for (const skill of SKILLS) html += `<th class="th-skill" onclick="openModal('${skill}')">${st(skill)}</th>`;
-    html += `<th>${t("progress")}</th></tr></thead><tbody>`;
+    html += `<th onclick="toggleSort('progress')">${t("progress")}${sortBy === "progress" ? arrow : ""}</th></tr></thead><tbody>`;
 
-    for (const p of approved) {
+    for (const p of list) {
       const pts = SKILLS.filter(s => p.skills[s]).length;
       const pct = Math.round(pts / maxPts * 100);
       const allDone = pts === maxPts;
