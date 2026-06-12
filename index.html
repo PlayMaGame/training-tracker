@@ -67,8 +67,8 @@
 
   .ri-done { background: none; border: none; color: #4caf50; cursor: pointer; font-size: 12px; }
   .empty-state { color: #555; font-style: italic; text-align: center; padding: 40px 10px; font-size: 13px; }
-  .passed-section { height: 220px; flex-shrink: 0; border-radius: 8px; border: 1px solid #0f3460; padding: 8px 12px; overflow-y: auto; background: #16213e; }
-  .passed-section .ps-h { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .passed-section { height: 240px; flex-shrink: 0; border-radius: 8px; border: 1px solid #0f3460; padding: 8px 12px; overflow-y: auto; background: #16213e; }
+  .passed-section .ps-h { font-size: 12px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; display: flex; justify-content: space-between; position: sticky; top: 0; background: #16213e; z-index: 3; padding: 8px 0 4px; }
   .passed-section .ps-h span { color: #e94560; }
   .ps-list { display: flex; flex-wrap: wrap; gap: 4px; }
   .ps-item { display: inline-flex; align-items: center; gap: 4px; background: #1a1a2e; padding: 4px 10px; border-radius: 12px; font-size: 12px; }
@@ -243,7 +243,7 @@ function st(k) { return LANG[lang].skillTitle[k]; }
 function sd(k) { return LANG[lang].desc[k]; }
 function fmtDate(iso) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(lang === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "short" });
+  return new Date(iso).toLocaleDateString(lang === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "short", year: "numeric" });
 }
 
 // ---- Server sync ----
