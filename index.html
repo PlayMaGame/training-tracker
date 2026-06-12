@@ -41,13 +41,21 @@
   .train-section .ts-h .ts-info { font-size: 12px; color: #999; }
   .train-section .ts-h .ts-info b { color: #e94560; }
   .table-wrap { flex: 1; overflow: auto; border-radius: 8px; border: 1px solid #0f3460; }
-  table { border-collapse: collapse; font-size: 12px; width: 100%; }
+  table { border-collapse: collapse; font-size: 12px; width: 100%; table-layout: fixed; }
   th, td { border: 1px solid #0f3460; padding: 5px 5px; text-align: center; white-space: nowrap; }
   th { background: #0f3460; color: #e94560; font-weight: 600; position: sticky; top: 0; z-index: 2; cursor: pointer; user-select: none; }
   th:hover { background: #1a4a80; }
-  th:first-child { text-align: left; cursor: default; position: sticky; left: 0; z-index: 4; }
+  th:first-child { text-align: left; cursor: default; position: sticky; left: 0; z-index: 4; width: 80px; }
   th:first-child:hover { background: #0f3460; }
-  td:first-child { text-align: left; background: #16213e; position: sticky; left: 0; z-index: 1; font-size: 12px; min-width: 80px; }
+  th:last-child, td:last-child { width: 90px; }
+  td:first-child { text-align: left; background: #16213e; position: sticky; left: 0; z-index: 1; font-size: 12px; width: 80px; }
+  .th-skill { writing-mode: vertical-lr; text-orientation: mixed; height: 100px; cursor: pointer; }
+  .td-progress { text-align: center; }
+  .td-progress .ri-bar { display: inline-block; width: 50px; height: 6px; background: #0f3460; border-radius: 3px; overflow: hidden; }
+  .td-progress .ri-bar .ri-fill { height: 100%; background: #e94560; border-radius: 3px; transition: width 0.2s; }
+  .td-progress .ri-pct { font-size: 10px; color: #888; margin-left: 3px; }
+  .lang-btn { font-size: 11px; background: #0f3460; color: #999; border: none; border-radius: 4px; padding: 3px 10px; cursor: pointer; }
+  .lang-btn:hover { color: #e94560; }
   .cell-cb { width: 18px; height: 18px; border: 2px solid #555; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; cursor: default; transition: 0.15s; vertical-align: middle; }
   .cell-cb.checked { border-color: #e94560; background: #e94560; color: #fff; }
   .cell-cb.admin { cursor: pointer; }
@@ -56,11 +64,8 @@
   .row-ign .ri-del { display: none; background: none; border: none; color: #533; cursor: pointer; font-size: 13px; padding: 0; }
   .row-ign .ri-del:hover { color: #e94560; }
   .row-ign .ri-del.admin { display: inline; }
-  .row-ign .ri-bar { width: 40px; height: 4px; background: #0f3460; border-radius: 2px; overflow: hidden; flex-shrink: 0; }
-  .row-ign .ri-bar .ri-fill { height: 100%; background: #e94560; border-radius: 2px; transition: width 0.2s; }
-  .row-ign .ri-pct { font-size: 10px; color: #888; min-width: 28px; }
-  .row-ign .ri-done { display: none; background: none; border: none; color: #4caf50; cursor: pointer; font-size: 12px; }
-  .row-ign .ri-done.admin { display: inline; }
+
+  .ri-done { background: none; border: none; color: #4caf50; cursor: pointer; font-size: 12px; }
   .empty-state { color: #555; font-style: italic; text-align: center; padding: 40px 10px; font-size: 13px; }
   .passed-section { height: 220px; flex-shrink: 0; border-radius: 8px; border: 1px solid #0f3460; padding: 8px 12px; overflow-y: auto; background: #16213e; }
   .passed-section .ps-h { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: flex; justify-content: space-between; }
@@ -118,6 +123,7 @@
         <h1 id="mainTitle">Очередь</h1>
         <span class="admin-badge" id="adminBadge">Admin</span>
         <button class="lock-btn" id="lockBtn" onclick="exitAdmin()">Закрыть</button>
+        <button class="lang-btn" id="langBtn" onclick="toggleLang()">EN</button>
       </div>
       <div class="reg-row">
         <input type="text" id="ignInput" placeholder="Введите ник...">
@@ -173,7 +179,7 @@ const ADMIN_PASSWORD = "runni123";
 const LANG = {
   en: {
     add:"+", placeholder:"Enter IGN...", waiting:"Queue", passed:"Completed", training:"Training",
-    gotIt:"Got it", ign:"IGN", players:"players", points:"p.", exists:"Player already exists!", passedSection:"Completed / Reviews",
+    gotIt:"Got it", ign:"IGN", players:"players", points:"p.", exists:"Player already exists!", passedSection:"Completed / Reviews", progress:"Progress",
     noActive:"No active players", approve:"→", done:"✓", back:"↩",
     emptyTrain:"No active players.", emptyPassed:"—",
     reviewPlaceholder:"Write a review...", reviewSave:"Save", reviewCancel:"Cancel", reviewSubTrained:"trained",
@@ -197,7 +203,7 @@ const LANG = {
   },
   ru: {
     add:"+", placeholder:"Введите ник...", waiting:"Ожидают", passed:"Завершили", training:"Тренировка",
-    gotIt:"Понял", ign:"Ник в игре", players:"игроков", points:"оч.", exists:"Игрок уже существует!", passedSection:"Завершили / Отзывы",
+    gotIt:"Понял", ign:"Ник в игре", players:"игроков", points:"оч.", exists:"Игрок уже существует!", passedSection:"Завершили / Отзывы", progress:"Прогресс",
     noActive:"Нет активных игроков", approve:"→", done:"✓", back:"↩",
     emptyTrain:"Перенесите игроков из очереди.", emptyPassed:"—",
     reviewPlaceholder:"Напишите отзыв...", reviewSave:"Сохранить", reviewCancel:"Отмена", reviewSubTrained:"прошёл тренировку",
@@ -281,6 +287,10 @@ function save() {
   localStorage.setItem("training_tracker_state", JSON.stringify({ players: state.players }));
   pushState();
 }
+
+// Load saved language
+const savedLang = localStorage.getItem("training_lang");
+if (savedLang === "en" || savedLang === "ru") lang = savedLang;
 
 // Try to load from server, fall back to localStorage
 async function initLoad() {
@@ -422,6 +432,13 @@ function closeModal() { document.getElementById("modal").classList.remove("open"
 document.getElementById("modal").addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
+function toggleLang() {
+  lang = lang === "ru" ? "en" : "ru";
+  document.getElementById("langBtn").textContent = lang === "ru" ? "EN" : "RU";
+  localStorage.setItem("training_lang", lang);
+  render();
+}
+
 function render() {
   const maxPts = SKILLS.length;
   const queue = state.players.filter(p => p.status === "queue");
@@ -462,8 +479,8 @@ function render() {
     document.getElementById("trainInfo").innerHTML = `<b>${approved.length}</b> ${t("players")} · ${allChecks}/${approved.length * maxPts} ${t("points")}`;
 
     let html = "<thead><tr><th>" + t("ign") + "</th>";
-    for (const skill of SKILLS) html += `<th onclick="openModal('${skill}')">${st(skill)}</th>`;
-    html += "</tr></thead><tbody>";
+    for (const skill of SKILLS) html += `<th class="th-skill" onclick="openModal('${skill}')">${st(skill)}</th>`;
+    html += `<th>${t("progress")}</th></tr></thead><tbody>`;
 
     for (const p of approved) {
       const pts = SKILLS.filter(s => p.skills[s]).length;
@@ -472,15 +489,13 @@ function render() {
       html += `<tr><td><div class="row-ign">
         ${state.admin ? `<button class="ri-del admin" onclick="removePlayer('${p.ign}')">✕</button>` : ""}
         <span class="ri-name">${p.ign}</span>
-        <div class="ri-bar"><div class="ri-fill" style="width:${pct}%"></div></div>
-        <span class="ri-pct">${pct}%</span>
-        ${state.admin && allDone ? `<button class="ri-done admin" onclick="markDone('${p.ign}')">${t("done")}</button>` : ""}
       </div></td>`;
       for (const skill of SKILLS) {
         const checked = p.skills[skill] || false;
         const clickable = state.admin ? ` onclick="toggleSkill('${p.ign}', '${skill}')"` : "";
         html += `<td><span class="cell-cb${checked ? ' checked' : ''}${state.admin ? ' admin' : ''}"${clickable}>${checked ? '✓' : ''}</span></td>`;
       }
+      html += `<td class="td-progress"><div class="ri-bar"><div class="ri-fill" style="width:${pct}%"></div></div><span class="ri-pct">${pct}%</span>${state.admin && allDone ? ` <button class="ri-done" onclick="markDone('${p.ign}')">${t("done")}</button>` : ""}</td>`;
       html += "</tr>";
     }
     html += "</tbody>";
@@ -530,6 +545,7 @@ function render() {
 // Start
 (async function() {
   await initLoad();
+  document.getElementById("langBtn").textContent = lang === "ru" ? "EN" : "RU";
   startSync();
   render();
 })();
