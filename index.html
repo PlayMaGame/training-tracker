@@ -180,7 +180,7 @@ const ADMIN_PASSWORD = "runni123";
 const LANG = {
   en: {
     add:"+", placeholder:"Enter IGN...", waiting:"Queue", passed:"Completed", training:"Training",
-    gotIt:"Got it", ign:"IGN", players:"players", points:"p.", exists:"Player already exists!", passedSection:"Completed / Reviews", progress:"Progress", hint:"Register your in-game name above.\nThe trainer will contact you when available.",
+    gotIt:"Got it", ign:"IGN", players:"players", points:"p.", exists:"Player already exists!", passedSection:"Completed / Reviews", progress:"Progress", lastActivity:"Last Active", hint:"Register your in-game name above.\nThe trainer will contact you when available.",
     noActive:"No active players", approve:"→", done:"✓", back:"↩",
     emptyTrain:"No active players.", emptyPassed:"—",
     reviewPlaceholder:"Write a review...", reviewSave:"Save", reviewCancel:"Cancel", reviewSubTrained:"trained",
@@ -204,7 +204,7 @@ const LANG = {
   },
   ru: {
     add:"+", placeholder:"Введите ник...", waiting:"Ожидают", passed:"Завершили", training:"Тренировка",
-    gotIt:"Понял", ign:"Ник в игре", players:"игроков", points:"оч.", exists:"Игрок уже существует!", passedSection:"Завершили / Отзывы", progress:"Прогресс", hint:"Зарегистрируйте свой ник выше.\nТренер свяжется с вами, когда появится место.",
+    gotIt:"Понял", ign:"Ник в игре", players:"игроков", points:"оч.", exists:"Игрок уже существует!", passedSection:"Завершили / Отзывы", progress:"Прогресс", lastActivity:"Активность", hint:"Зарегистрируйте свой ник выше.\nТренер свяжется с вами, когда появится место.",
     noActive:"Нет активных игроков", approve:"→", done:"✓", back:"↩",
     emptyTrain:"Перенесите игроков из очереди.", emptyPassed:"—",
     reviewPlaceholder:"Напишите отзыв...", reviewSave:"Сохранить", reviewCancel:"Отмена", reviewSubTrained:"прошёл тренировку",
@@ -241,6 +241,10 @@ let sortDir = "asc"; // "asc" | "desc"
 function t(k) { return LANG[lang][k]; }
 function st(k) { return LANG[lang].skillTitle[k]; }
 function sd(k) { return LANG[lang].desc[k]; }
+function fmtDate(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString(lang === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "short" });
+}
 
 // ---- Server sync ----
 
@@ -325,7 +329,7 @@ function addPlayer() {
   const ign = input.value.trim();
   if (!ign) return;
   if (state.players.find(p => p.ign.toLowerCase() === ign.toLowerCase())) { alert(t("exists")); return; }
-  state.players.push({ ign, skills: {}, status: "queue", review: "" });
+  state.players.push({ ign, skills: {}, status: "queue", review: "", registeredAt: new Date().toISOString() });
   input.value = "";
   save();
   render();
@@ -344,6 +348,7 @@ function approvePlayer(ign) {
   const p = state.players.find(x => x.ign === ign);
   if (!p) return;
   p.status = "approved";
+  p.lastActivity = new Date().toISOString();
   save();
   render();
 }
@@ -353,6 +358,7 @@ function markDone(ign) {
   const p = state.players.find(x => x.ign === ign);
   if (!p) return;
   p.status = "passed";
+  p.finishedAt = new Date().toISOString();
   save();
   render();
 }
@@ -362,6 +368,7 @@ function moveBack(ign) {
   const p = state.players.find(x => x.ign === ign);
   if (!p) return;
   p.status = "approved";
+  p.lastActivity = new Date().toISOString();
   save();
   render();
 }
@@ -372,6 +379,7 @@ function toggleSkill(ign, skill) {
   if (!p) return;
   if (p.skills[skill]) delete p.skills[skill];
   else p.skills[skill] = true;
+  p.lastActivity = new Date().toISOString();
   save();
   render();
 }
@@ -472,6 +480,7 @@ function render() {
     for (const p of queue) {
       html += `<div class="q-item${state.admin ? ' admin' : ''}">
         <span class="qi-name">${p.ign}</span>
+        <span style="font-size:10px;color:#555;">${fmtDate(p.registeredAt)}</span>
         ${state.admin ? `<button class="qi-del" onclick="removePlayer('${p.ign}')">✕</button>` : ""}
         ${state.admin ? `<button class="qi-btn" onclick="approvePlayer('${p.ign}')">${t("approve")}</button>` : ""}
      </div>`;
@@ -505,7 +514,8 @@ function render() {
     const arrow = sortDir === "asc" ? " ▲" : " ▼";
     let html = "<thead><tr><th onclick=\"toggleSort('ign')\">" + t("ign") + (sortBy === "ign" ? arrow : "") + "</th>";
     for (const skill of SKILLS) html += `<th class="th-skill" onclick="openModal('${skill}')">${st(skill)}</th>`;
-    html += `<th onclick="toggleSort('progress')">${t("progress")}${sortBy === "progress" ? arrow : ""}</th></tr></thead><tbody>`;
+    html += `<th onclick="toggleSort('progress')">${t("progress")}${sortBy === "progress" ? arrow : ""}</th>`;
+    html += `<th>${t("lastActivity")}</th></tr></thead><tbody>`;
 
     for (const p of list) {
       const pts = SKILLS.filter(s => p.skills[s]).length;
@@ -521,6 +531,7 @@ function render() {
         html += `<td><span class="cell-cb${checked ? ' checked' : ''}${state.admin ? ' admin' : ''}"${clickable}>${checked ? '✓' : ''}</span></td>`;
       }
       html += `<td class="td-progress"><div class="ri-bar"><div class="ri-fill" style="width:${pct}%"></div></div><span class="ri-pct">${pct}%</span>${state.admin && allDone ? ` <button class="ri-done" onclick="markDone('${p.ign}')">${t("done")}</button>` : ""}</td>`;
+      html += `<td style="font-size:10px;color:#888;">${fmtDate(p.lastActivity)}</td>`;
       html += "</tr>";
     }
     html += "</tbody>";
@@ -539,11 +550,10 @@ function render() {
     if (state.admin) {
       let html = "";
       for (const p of passed) {
-        const pts = SKILLS.filter(s => p.skills[s]).length;
         const hasReview = p.review ? "📝" : "";
         html += `<div class="ps-item admin">
           <span class="ps-name" onclick="openReview('${p.ign}')">${p.ign} ${hasReview}</span>
-          <span style="font-size:10px;color:#555;">${pts}/${maxPts}</span>
+          <span style="font-size:10px;color:#555;">${fmtDate(p.finishedAt)}</span>
           <button class="ps-back" onclick="moveBack('${p.ign}')">${t("back")}</button>
           <button class="ps-del" onclick="removePlayer('${p.ign}')">✕</button>
         </div>`;
@@ -552,11 +562,10 @@ function render() {
     } else {
       let html = '<div class="ps-list-student">';
       for (const p of passed) {
-        const pts = SKILLS.filter(s => p.skills[s]).length;
         html += `<div class="psi-student">
           <div class="psi-head">
             <span class="psi-name">${p.ign}</span>
-            <span class="psi-score">${pts}/${maxPts}</span>
+            <span class="psi-score">${fmtDate(p.finishedAt)}</span>
           </div>
           <div class="psi-text">${p.review || ""}</div>
         </div>`;
