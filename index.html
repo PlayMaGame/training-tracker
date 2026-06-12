@@ -173,7 +173,7 @@ const ADMIN_PASSWORD = "runni123";
 const LANG = {
   en: {
     add:"+", placeholder:"Enter IGN...", waiting:"Queue", passed:"Completed", training:"Training",
-    gotIt:"Got it", players:"players", points:"p.", exists:"Player already exists!",
+    gotIt:"Got it", ign:"IGN", players:"players", points:"p.", exists:"Player already exists!",
     noActive:"No active players", approve:"→", done:"✓", back:"↩",
     emptyTrain:"No active players.", emptyPassed:"—",
     reviewPlaceholder:"Write a review...", reviewSave:"Save", reviewCancel:"Cancel", reviewSubTrained:"trained",
@@ -197,12 +197,12 @@ const LANG = {
   },
   ru: {
     add:"+", placeholder:"Введите ник...", waiting:"Ожидают", passed:"Завершили", training:"Тренировка",
-    gotIt:"Понял", players:"игроков", points:"оч.", exists:"Игрок уже существует!",
+    gotIt:"Понял", ign:"Ник в игре", players:"игроков", points:"оч.", exists:"Игрок уже существует!",
     noActive:"Нет активных игроков", approve:"→", done:"✓", back:"↩",
     emptyTrain:"Перенесите игроков из очереди.", emptyPassed:"—",
     reviewPlaceholder:"Напишите отзыв...", reviewSave:"Сохранить", reviewCancel:"Отмена", reviewSubTrained:"прошёл тренировку",
     skillTitle: {
-      "Keybinds":"Кейбинды","Attack Markers":"Маркеры","Blocking":"Блок","Charged vs Fast":"Зар/Быстр","Feints":"Финты","Kicks":"Пинки","Parrying":"Парир","Window Pressure":"Окна","Stamina Mgmt":"Стамина","Spear Throws":"Копья","Anim Shortening":"Сокр Аним","1v1 Meta (GS)":"1х1 Мета"
+      "Keybinds":"Кейбинды","Attack Markers":"Маркеры","Blocking":"Блок","Charged vs Fast":"Атаки","Feints":"Финты","Kicks":"Пинки","Parrying":"Парирования","Window Pressure":"Окна","Stamina Mgmt":"Стамина","Spear Throws":"Копья","Anim Shortening":"Скорость Анимаций","1v1 Meta (GS)":"1х1 Мета"
     },
     desc: {
       "Keybinds":"Настройте отдельные кейбинды на атаки и блок. Поменяйте цвета неуспешного блока. Вынесите ХП и выносливость под ноги для удобства.",
@@ -461,7 +461,7 @@ function render() {
     const allChecks = approved.reduce((sum, p) => sum + SKILLS.filter(s => p.skills[s]).length, 0);
     document.getElementById("trainInfo").innerHTML = `<b>${approved.length}</b> ${t("players")} · ${allChecks}/${approved.length * maxPts} ${t("points")}`;
 
-    let html = "<thead><tr><th>IGN</th>";
+    let html = "<thead><tr><th>" + t("ign") + "</th>";
     for (const skill of SKILLS) html += `<th onclick="openModal('${skill}')">${st(skill)}</th>`;
     html += "</tr></thead><tbody>";
 
